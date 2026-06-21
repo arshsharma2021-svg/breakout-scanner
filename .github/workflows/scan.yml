@@ -1,0 +1,37 @@
+name: Run Breakout Scanner
+
+on:
+  schedule:
+    # Runs at minute 30 past every hour, 13:30-20:30 UTC = 9:30am-4:30pm ET
+    # (covers US market hours; GitHub's scheduler can run a few minutes late, that's normal)
+    - cron: '30 13-20 * * 1-5'
+  workflow_dispatch: {}   # lets you manually trigger a run from the Actions tab anytime
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scanner
+        run: python scanner.py --min-score 0 --out data/results.json
+
+      - name: Commit updated results
+        run: |
+          git config user.name "breakout-scanner-bot"
+          git config user.email "actions@github.com"
+          git add data/results.json
+          git diff --staged --quiet || git commit -m "Auto-update scan results [skip ci]"
+          git push

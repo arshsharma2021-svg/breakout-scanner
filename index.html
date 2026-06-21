@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Breakout Scanner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0D0F12;
+    --panel: #14171C;
+    --panel-border: #23282F;
+    --text: #E6E9EE;
+    --text-dim: #7A8290;
+    --green: #3DDC84;
+    --red: #FF5C5C;
+    --amber: #FFB454;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    padding: 24px;
+    min-height: 100vh;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  h1 span {
+    color: var(--green);
+    font-family: var(--mono);
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  .market-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .dot.off { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .dot.unknown { background: var(--text-dim); }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .file-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+
+  input[type="file"] {
+    color: var(--text-dim);
+    font-size: 13px;
+    font-family: var(--sans);
+  }
+
+  select, input[type="text"] {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--sans);
+    font-size: 13px;
+  }
+
+  .stat {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .stat b { color: var(--text); }
+
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text-dim);
+  }
+  .empty-state h2 {
+    color: var(--text);
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  .empty-state code {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--green);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 18px;
+    transition: border-color 0.15s ease;
+  }
+  .card:hover { border-color: #3a4350; }
+
+  .card.filtered-out { opacity: 0.45; }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .ticker {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .price {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .score-badge {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    text-align: right;
+  }
+
+  .score-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+
+  /* Signature element: pattern ladder */
+  .ladder {
+    display: flex;
+    gap: 6px;
+    margin: 14px 0;
+  }
+
+  .rung {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: #23282F;
+    position: relative;
+  }
+  .rung.lit { background: var(--green); }
+  .rung.lit.amber { background: var(--amber); }
+
+  .step-labels {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .step-labels span {
+    flex: 1;
+    font-size: 9px;
+    text-align: center;
+    color: var(--text-dim);
+    font-family: var(--mono);
+  }
+  .step-labels span.lit { color: var(--green); }
+
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 4px 0;
+    border-top: 1px solid var(--panel-border);
+  }
+  .meta-row:first-of-type { border-top: none; padding-top: 0; }
+
+  .meta-row b {
+    color: var(--text);
+    font-family: var(--mono);
+  }
+
+  .filter-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .tag {
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--panel-border);
+  }
+  .tag.pass { color: var(--green); border-color: var(--green); }
+  .tag.fail { color: var(--red); border-color: var(--red); }
+
+  .runup-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--amber);
+    background: rgba(255,180,84,0.1);
+    border: 1px solid rgba(255,180,84,0.3);
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+
+  @media (max-width: 480px) {
+    .header { flex-direction: column; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Breakout <span>Scanner</span></h1>
+    <div class="subtitle" id="subtitle">Loading latest scan...</div>
+  </div>
+  <div class="market-badge" id="marketBadge">
+    <div class="dot unknown"></div>
+    <div>Loading...</div>
+  </div>
+</div>
+
+<div class="controls">
+  <button id="refreshBtn" style="background:var(--panel);border:1px solid var(--panel-border);color:var(--text);border-radius:8px;padding:10px 16px;font-family:var(--sans);font-size:13px;cursor:pointer;">↻ Refresh</button>
+  <select id="sortSelect">
+    <option value="score">Sort: Pattern score</option>
+    <option value="ticker">Sort: Ticker A-Z</option>
+    <option value="adr">Sort: ADR%</option>
+    <option value="volume">Sort: Avg $ Volume</option>
+  </select>
+  <select id="filterSelect">
+    <option value="all">Show: All</option>
+    <option value="passing">Show: Passing hard filters only</option>
+    <option value="candidates">Show: 3+/5 pattern steps</option>
+  </select>
+  <input type="text" id="searchInput" placeholder="Filter by ticker...">
+  <div class="stat" id="statLine"></div>
+</div>
+
+<div id="content">
+  <div class="empty-state">
+    <h2>No data loaded yet</h2>
+    <p>Run <code>python scanner.py --finviz-url "..."</code> (or <code>--tickers</code> / <code>--csv</code>),
+    then load the generated <code>results.json</code> file above.</p>
+  </div>
+</div>
+
+<script>
+const STEP_LABELS = ["1: Run-up", "2: SMA Up", "3: Pullback", "4: Vol Dry", "5: Breakout"];
+let currentData = null;
+
+async function loadData() {
+  try {
+    const res = await fetch('data/results.json?t=' + Date.now()); // cache-bust
+    if (!res.ok) throw new Error('results.json not found yet — first scan may still be running');
+    currentData = await res.json();
+    render();
+  } catch (err) {
+    document.getElementById('content').innerHTML =
+      `<div class="empty-state"><h2>No scan data yet</h2><p>${err.message}</p>
+       <p style="margin-top:10px">The scanner runs hourly during market hours. Check back soon, or trigger a manual run from the GitHub Actions tab.</p></div>`;
+    document.getElementById('subtitle').textContent = 'Waiting for first scan...';
+  }
+}
+
+document.getElementById('refreshBtn').addEventListener('click', loadData);
+
+// auto-refresh every 5 minutes in case a new scan just landed
+setInterval(loadData, 5 * 60 * 1000);
+
+loadData();
+
+document.getElementById('sortSelect').addEventListener('change', render);
+document.getElementById('filterSelect').addEventListener('change', render);
+document.getElementById('searchInput').addEventListener('input', render);
+
+function render() {
+  if (!currentData) return;
+
+  // header / market badge
+  const gen = new Date(currentData.generated_at);
+  document.getElementById('subtitle').textContent =
+    `Generated ${gen.toLocaleString()} · ${currentData.results.length} tickers scanned`;
+
+  const market = currentData.market_conditions || {};
+  const badge = document.getElementById('marketBadge');
+  let dotClass = 'unknown';
+  if (market.favorable === true) dotClass = 'on';
+  if (market.favorable === false) dotClass = 'off';
+  badge.innerHTML = `<div class="dot ${dotClass}"></div><div>${market.note || 'Unknown'}</div>`;
+
+  // filter + sort
+  let results = [...currentData.results];
+
+  const search = document.getElementById('searchInput').value.trim().toUpperCase();
+  if (search) results = results.filter(r => r.ticker.includes(search));
+
+  const filterMode = document.getElementById('filterSelect').value;
+  if (filterMode === 'passing') results = results.filter(r => r.passes_hard_filters);
+  if (filterMode === 'candidates') results = results.filter(r => r.pattern && r.pattern.steps_passed >= 3);
+
+  const sortMode = document.getElementById('sortSelect').value;
+  results.sort((a, b) => {
+    if (sortMode === 'ticker') return a.ticker.localeCompare(b.ticker);
+    if (sortMode === 'adr') return (b.adr_pct || 0) - (a.adr_pct || 0);
+    if (sortMode === 'volume') return (b.avg_dollar_volume_20 || 0) - (a.avg_dollar_volume_20 || 0);
+    // default: score, with passing filters first
+    const aScore = (a.passes_hard_filters ? 1000 : 0) + (a.pattern ? a.pattern.score : 0);
+    const bScore = (b.passes_hard_filters ? 1000 : 0) + (b.pattern ? b.pattern.score : 0);
+    return bScore - aScore;
+  });
+
+  document.getElementById('statLine').innerHTML =
+    `Showing <b>${results.length}</b> of ${currentData.results.length}`;
+
+  if (results.length === 0) {
+    document.getElementById('content').innerHTML =
+      `<div class="empty-state"><h2>No matches</h2><p>Try adjusting filters or search.</p></div>`;
+    return;
+  }
+
+  document.getElementById('content').innerHTML =
+    `<div class="grid">${results.map(cardHTML).join('')}</div>`;
+}
+
+function cardHTML(r) {
+  const filteredOut = !r.passes_hard_filters;
+  const pattern = r.pattern;
+
+  const ladder = STEP_LABELS.map((label, i) => {
+    const key = ['step1_runup_30pct','step2_sma_inclining','step3_pullback_tightening',
+                  'step4_volume_dryup','step5_breakout_volume'][i];
+    const lit = pattern && pattern[key];
+    return `<div class="rung ${lit ? 'lit' : ''}"></div>`;
+  }).join('');
+
+  const stepLabels = STEP_LABELS.map((label, i) => {
+    const key = ['step1_runup_30pct','step2_sma_inclining','step3_pullback_tightening',
+                  'step4_volume_dryup','step5_breakout_volume'][i];
+    const lit = pattern && pattern[key];
+    return `<span class="${lit ? 'lit' : ''}">${label}</span>`;
+  }).join('');
+
+  let scoreHTML = '<div class="score-badge" style="color:var(--text-dim)">—</div><div class="score-label">filtered</div>';
+  if (pattern) {
+    const color = pattern.score >= 60 ? 'var(--green)' : pattern.score >= 40 ? 'var(--amber)' : 'var(--text-dim)';
+    scoreHTML = `<div class="score-badge" style="color:${color}">${pattern.score}%</div><div class="score-label">${pattern.steps_passed}/5 steps</div>`;
+  }
+
+  const filterTags = Object.entries(r.filter_checks || {}).map(([key, passed]) => {
+    const label = {
+      price_above_1: 'Price > $1',
+      adr_above_5: 'ADR% > 5',
+      'avg_dollar_vol_above_3.5M': '$Vol > 3.5M'
+    }[key] || key;
+    return `<span class="tag ${passed ? 'pass' : 'fail'}">${label}</span>`;
+  }).join('');
+
+  const runupTag = pattern && pattern.runup_pct !== null
+    ? `<div class="runup-tag">${pattern.runup_pct}% run-up (lookback)</div>`
+    : '';
+
+  return `
+    <div class="card ${filteredOut ? 'filtered-out' : ''}">
+      <div class="card-top">
+        <div>
+          <div class="ticker">${r.ticker}</div>
+          <div class="price">$${r.close.toFixed(2)} · ADR ${r.adr_pct ?? '—'}%</div>
+        </div>
+        <div>${scoreHTML}</div>
+      </div>
+      ${runupTag}
+      <div class="ladder">${ladder}</div>
+      <div class="step-labels">${stepLabels}</div>
+      <div class="meta-row"><span>Avg $ Volume (20d)</span><b>${formatVolume(r.avg_dollar_volume_20)}</b></div>
+      ${pattern && pattern.details && pattern.details.pct_from_sma20 !== null && pattern.details.pct_from_sma20 !== undefined
+        ? `<div class="meta-row"><span>% from SMA20</span><b>${pattern.details.pct_from_sma20}%</b></div>` : ''}
+      ${pattern && pattern.details && pattern.details.breakout_volume_ratio
+        ? `<div class="meta-row"><span>Vol vs 20d avg</span><b>${pattern.details.breakout_volume_ratio}x</b></div>` : ''}
+      ${pattern && pattern.sma_all_stacked
+        ? `<div class="meta-row"><span>MA stack 10>20>50>200</span><b style="color:var(--green)">YES</b></div>` : ''}
+      <div class="filter-tags">${filterTags}</div>
+    </div>
+  `;
+}
+
+function formatVolume(v) {
+  if (v === null || v === undefined) return '—';
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(0) + 'K';
+  return '$' + v.toFixed(0);
+}
+</script>
+
+</body>
+</html>
