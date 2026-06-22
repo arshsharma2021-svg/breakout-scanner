@@ -1,10 +1,24 @@
 {
-  "generated_at": null,
-  "universe_size": 0,
+  "generated_at": "2026-06-22T04:26:03.014086",
+  "universe_size": 944,
   "passed_filters": 0,
   "failed_filters": 0,
-  "errors": 0,
-  "config": {},
-  "market_conditions": {"favorable": null, "note": "No scan has run yet"},
+  "errors": 944,
+  "config": {
+    "min_price": 1.0,
+    "min_adr_pct": 5.0,
+    "min_avg_dollar_volume": 3500000,
+    "runup_lookback_days": 60,
+    "runup_min_pct": 30.0,
+    "sma_slope_lookback": 5,
+    "pullback_lookback_days": 20,
+    "volume_dryup_ratio": 0.7,
+    "breakout_volume_ratio": 1.5,
+    "sma20_proximity_pct": 0.08
+  },
+  "market_conditions": {
+    "favorable": null,
+    "note": "Could not fetch QQQ data"
+  },
   "results": []
 }
